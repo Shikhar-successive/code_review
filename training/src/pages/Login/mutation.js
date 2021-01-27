@@ -2,7 +2,7 @@ import { gql } from '@apollo/client';
 // import { Mutation } from '@apollo/react-hooks';
 // import { useMutation } from '@apollo/client';
 
-console.log('inside mutauon');
+// console.log('inside login mutauon');
 
 const LOGIN_USER = gql`
   mutation loginUser($email: String!, $password: String!) {

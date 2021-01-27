@@ -47,7 +47,7 @@ export default function MyTable(props) {
     const { onSort } = props;
     onSort(field);
   };
-  // console.log(data.length, '========================');
+  console.log('Table DATA--------', data);
   return (
     <TableContainer component={Paper}>
       <Table aria-label="simple table">

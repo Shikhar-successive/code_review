@@ -11,8 +11,6 @@ import * as Yup from 'yup';
 import PropTypes from 'prop-types';
 // import getLogin from './mutation';
 // import { Mutation } from '@apollo/react-components';
-// import { useMutation } from '@apollo/client';
-// import { useMutation } from '@apollo/react-hooks';
 // import { LOGIN_USER } from './mutation';
 // import { callApi } from '../../libs/utils';
 import { SnackbarContext } from '../../contexts/SnackBarProvider/SnackBarProvider';
@@ -96,6 +94,7 @@ class Login extends Component {
     const { email, password } = this.state;
     // const userInfo = { email, password };
     const { loginUser } = this.props;
+    console.log(loginUser, '====');
     this.setState({
       spinner: true,
       btnDisable: true,
@@ -107,7 +106,9 @@ class Login extends Component {
     try {
       const user = await loginUser({ variables: { email, password } });
       console.log(user);
-      if (user.data.loginUser === 'Invalid Email' || user.data.loginUser === 'Invalid Password') {
+      if (user.data.loginUser === 'Invalid Email'
+       || user.data.loginUser === 'Invalid Password'
+       || user.data.loginUser === 'Something went wrong') {
         this.setState({
           spinner: false,
           btnDisable: false,
@@ -123,6 +124,7 @@ class Login extends Component {
       }
     } catch (error) {
       if (error.message.includes('Network error')) {
+        console.log(error);
         this.setState({
           spinner: false,
           btnDisable: false,
