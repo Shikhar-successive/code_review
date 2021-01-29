@@ -11,6 +11,7 @@ import { SnackbarContext } from '../../contexts/SnackBarProvider/SnackBarProvide
 import { callApi } from '../../libs/utils';
 import { withLoaderAndMessage } from '../../components/hoc';
 import { GET_USER } from './query';
+import { TRAINEE_UPDATED } from './subscription';
 
 const asend = 'asc';
 const dsend = 'desc';
@@ -32,7 +33,31 @@ class TraineeList extends Component {
   }
 
   async componentDidMount() {
-    // console.log('inside CDM');
+    const { data: { subscribeToMore } } = this.props;
+    await subscribeToMore({
+      document: TRAINEE_UPDATED,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData) return prev;
+        const { data: { getAllTrainee: { data: { records } } } } = prev;
+        const { data: { traineeUpdated } } = subscriptionData;
+        const updatedRecords = [...records].map((record) => {
+          if (record.originalId === traineeUpdated.originalId) {
+            return {
+              ...record,
+              ...traineeUpdated,
+            };
+          }
+          return record;
+        });
+        return {
+          getAllTrainee: {
+            ...prev.getAllTrainee,
+            count: prev.getAllTrainee.count,
+            records: updatedRecords,
+          },
+        };
+      },
+    });
   }
 
   onOpen = () => {
