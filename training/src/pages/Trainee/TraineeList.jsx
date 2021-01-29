@@ -4,7 +4,6 @@ import PropTypes from 'prop-types';
 import EditIcon from '@material-ui/icons/Edit';
 import DeleteIcon from '@material-ui/icons/Delete';
 import { graphql } from '@apollo/react-hoc';
-import { CircularProgress } from '@material-ui/core';
 import { AddDialog, EditDialog, DeleteDialog } from './Componants';
 import { Table } from '../../components';
 import { getFormattedDate } from '../../libs/utils/getFormattedDate';
@@ -28,53 +27,12 @@ class TraineeList extends Component {
       edit: false,
       deleteDialog: false,
       traineeInfo: {},
-      spinner: true,
+      spinner: false,
     };
   }
 
   async componentDidMount() {
-    // const limit = 5;
-    // const { page } = this.state;
-    // const skip = page * limit;
-    // console.log(skip);
-    // const trainee = await callApi({}, 'get', '/trainee/getall', { skip, limit });
-    // eslint-disable-next-line react/destructuring-assignment
-
-    // console.log(this.props.data);
-    // const { data: { getAllTrainee: { data: { totalRecords, records } }, loading } } = this.props;
-    // this.setState({
-    //   data: {
-    //     details: records,
-    //     traineeCount: totalRecords,
-    //   },
-    //   spinner: loading,
-    // });
-    // refetch({ variables: { skip, limit } });
-    // console.log(records);
-
-    // const trainee = await getAllTrainee({ variables: { skip, limit } });
-    // if (trainee === 'Network Error') {
-    //   this.setState({ spinner: false });
-    // } else if (trainee.message === 'No data Found') {
-    //   this.setState({
-    //     data: {
-    //       traineeCount: 0,
-    //     },
-    //     spinner: false,
-    //   });
-    // } else if (trainee) {
-    //   const traineeData = trainee.data.records;
-    //   this.setState({
-    //     data: {
-    //       details: traineeData,
-    //       traineeCount: trainee.data.totalRecords,
-    //     },
-    //     spinner: false,
-    //   });
-    // } else if (localStorage.getItem('token') === null) {
-    //   const { history } = this.props;
-    //   history.push('/login');
-    // }
+    // console.log('inside CDM');
   }
 
   onOpen = () => {
@@ -93,38 +51,49 @@ class TraineeList extends Component {
       role: 'trainee',
       createdBy: 'Admin',
     };
-    this.setState({
-      spinner: true,
-    });
-    const user = await callApi(userInfo, 'post', '/trainee/create');
-    if (user.data) {
-      openSnackbar(user.message, 'success');
-      this.setState({
-        spinner: false,
-      }, () => this.componentDidMount());
-      this.onCloseEvent();
-      this.getTrainees();
-    } else if (user === 'Network Error') {
-      openSnackbar('Network Error', 'error');
-      this.setState({ spinner: false });
-      this.onCloseEvent();
-    } else if (user.response.status) {
-      if (localStorage.getItem('token') === null) {
-        this.onCloseEvent();
-        openSnackbar(user.response.data.message, 'error');
-        const { history } = this.props;
-        history.push('/login');
-      }
-      if (user.response.status === 403) {
-        openSnackbar(user.response.data.message, 'error');
+    const {
+      name, email, password, role, createdBy,
+    } = userInfo;
+    this.setState({ spinner: true });
+    try {
+      const { create } = this.props;
+      const user = await create({
+        variables: {
+          name, email, password, role, createdBy,
+        },
+      });
+      if (user.data.create.data.email === email) {
+        openSnackbar(user.data.create.message, 'success');
+        const { data: { refetch } } = this.props;
         this.setState({
           spinner: false,
-        }, () => this.componentDidMount());
+          page: 0,
+        }, () => refetch({ skip: 0, limit: 5 }));
         this.onCloseEvent();
-        this.getTrainees();
+      } else if (user.data.create.message === 'User is Unauthorized') {
+        this.setState({
+          spinner: false,
+        });
+        this.onCloseEvent();
+        openSnackbar(user.data.create.message, 'error');
+      } else if (user.data.create.message === 'Token Expired') {
+        this.setState({
+          spinner: false,
+        });
+        this.onCloseEvent();
+        const { history } = this.props;
+        history.push('/login');
+        openSnackbar(user.data.create.message, 'error');
+      }
+    } catch (error) {
+      if (error.message.includes('Network error')) {
+        this.setState({
+          spinner: false,
+        });
+        this.onCloseEvent();
+        openSnackbar(error.message, 'error');
       }
     }
-    return '';
   }
 
   editDialogOpen = (item) => {
@@ -145,37 +114,50 @@ class TraineeList extends Component {
       role: 'trainee',
       updatedBy: 'Admin',
     };
+    const {
+      originalId, name, email, role, updatedBy,
+    } = userInfo;
     this.setState({
       spinner: true,
     });
-    const updateUser = await callApi(userInfo, 'put', '/trainee/update');
-    if (updateUser.data) {
-      openSnackbar(updateUser.message, 'success');
-      this.setState({
-        spinner: false,
-      }, () => this.componentDidMount());
-      this.editDialogClose();
-      this.getTrainees();
-    } else if (updateUser === 'Network Error') {
-      openSnackbar('Network Error', 'error');
-      this.setState({ spinner: false });
-      this.editDialogClose();
-    } else if (updateUser.response.status) {
-      if (localStorage.getItem('token') === null) {
-        this.onCloseEvent();
-        openSnackbar(updateUser.response.data.message, 'error');
-        const { history } = this.props;
-        history.push('/login');
-      } else if (updateUser.response.status === 403) {
-        openSnackbar(updateUser.response.data.message, 'error');
+    try {
+      const { update } = this.props;
+      const updateUser = await update({
+        variables: {
+          originalId, name, email, role, updatedBy,
+        },
+      });
+      if (updateUser.data.update.data.email === email) {
+        openSnackbar(updateUser.data.update.message, 'success');
+        const { data: { refetch } } = this.props;
         this.setState({
           spinner: false,
-        }, () => this.componentDidMount());
+        }, () => refetch());
         this.editDialogClose();
-        this.getTrainees();
+      } else if (updateUser.data.update.message === 'User is Unauthorized') {
+        this.setState({
+          spinner: false,
+        });
+        this.editDialogClose();
+        openSnackbar(updateUser.data.update.message, 'error');
+      } else if (updateUser.data.update.message === 'Token Expired') {
+        this.setState({
+          spinner: false,
+        });
+        this.onCloseEvent();
+        const { history } = this.props;
+        history.push('/login');
+        openSnackbar(updateUser.data.update.message, 'error');
+      }
+    } catch (error) {
+      if (error.message.includes('Network error')) {
+        this.setState({
+          spinner: false,
+        });
+        this.editDialogClose();
+        openSnackbar(error.message, 'error');
       }
     }
-    return '';
   }
 
   deleteDialogOpen = (item) => {
@@ -189,76 +171,71 @@ class TraineeList extends Component {
   };
 
   handleDelete = async (openSnackbar) => {
+    let { page } = this.state;
+    const { traineeInfo } = this.state;
+    const { originalId } = traineeInfo;
+    const { data: { refetch, getAllTrainee: { data: { totalRecords } } } } = this.props;
     this.setState({
       spinner: true,
     });
-    let { page } = this.state;
-    const { traineeInfo, data } = this.state;
     if (traineeInfo.createdAt >= '2019-02-14') {
-      const deleteRec = await callApi({}, 'delete', `/trainee/delete/${traineeInfo.originalId}`);
-      if (deleteRec.data) {
-        openSnackbar(deleteRec.message, 'success');
-        if (page > 0) {
-          if (((data.traineeCount - 1) % 5) > 0) {
-            console.log(traineeInfo);
+      const { deleteUser } = this.props;
+      try {
+        const deleteRec = await deleteUser({
+          variables: {
+            originalId,
+          },
+        });
+        if (deleteRec.data.deleteUser.data.id === originalId) {
+          openSnackbar(deleteRec.data.deleteUser.message, 'success');
+          if (page > 0) {
+            if (((totalRecords - 1) % 5) > 0) {
+              this.setState({
+                spinner: false,
+              }, () => refetch());
+              this.deleteDialogClose();
+            } else if (((totalRecords - 1) % 5) === 0) {
+              if (!((totalRecords - 1) / 5 === page)) {
+                this.setState({
+                  spinner: false,
+                }, () => refetch());
+                this.deleteDialogClose();
+              } else if ((totalRecords - 1) / 5 === page) {
+                this.setState({
+                  spinner: false,
+                  page: page -= 1,
+                }, () => refetch({ skip: page * 5, limit: 5 }));
+                this.deleteDialogClose();
+              }
+            }
+          } else if (page === 0) {
             this.setState({
               spinner: false,
-            }, () => this.componentDidMount());
+            }, () => refetch());
             this.deleteDialogClose();
-            this.getTrainees();
-            console.log(data.traineeCount);
-            console.log(page, '---page 1');
-          } else if (((data.traineeCount - 1) % 5) === 0) {
-            if (!((data.traineeCount - 1) / 5 === page)) {
-              console.log(Math.round(data.traineeCount / 5) === page, '2');
-              console.log(page);
-              this.setState({
-                spinner: false,
-                // page: page -= 1,
-              }, () => this.componentDidMount());
-              this.deleteDialogClose();
-              this.getTrainees();
-              console.log(data.traineeCount);
-              console.log(page, '---page 2');
-            } else if ((data.traineeCount - 1) / 5 === page) {
-              console.log(Math.round(data.traineeCount / 5) === page, '2aa');
-              console.log(page);
-              this.setState({
-                spinner: false,
-                page: page -= 1,
-              }, () => this.componentDidMount());
-              this.deleteDialogClose();
-              this.getTrainees();
-              console.log(data.traineeCount);
-              console.log(page, '---page 2aa');
-            }
           }
-        } else if (page === 0) {
+        } else if (deleteRec.data.deleteUser.message === 'User is Unauthorized') {
           this.setState({
             spinner: false,
-          }, () => this.componentDidMount());
+          }, () => refetch());
           this.deleteDialogClose();
-          this.getTrainees();
-          console.log(data.traineeCount);
-          console.log(page, '---page 4');
-        }
-      } else if (deleteRec === 'Network Error') {
-        openSnackbar('Network Error', 'error');
-        this.setState({ spinner: false });
-        this.deleteDialogClose();
-      } else if (deleteRec.response.status) {
-        if (localStorage.getItem('token') === null) {
+          openSnackbar(deleteRec.data.deleteUser.message, 'error');
+        } else if (deleteRec.data.deleteUser.message === 'Token Expired') {
+          this.setState({
+            spinner: false,
+          });
           this.onCloseEvent();
-          openSnackbar(deleteRec.response.data.message, 'error');
           const { history } = this.props;
           history.push('/login');
-        } else if (deleteRec.response.status === 403) {
-          openSnackbar(deleteRec.response.data.message, 'error');
+          openSnackbar(deleteRec.data.deleteUser.message, 'error');
+        }
+      } catch (error) {
+        if (error.message.includes('Network error')) {
           this.setState({
             spinner: false,
-          }, () => this.componentDidMount());
+          });
           this.deleteDialogClose();
-          this.getTrainees();
+          openSnackbar(error.message, 'error');
         }
       }
     }
@@ -275,16 +252,16 @@ class TraineeList extends Component {
 
   handleSelect = async (openSnackbar, data) => {
     localStorage.setItem('traineeDetail', JSON.stringify(data));
-    const response = await this.getTrainees();
-    if (response === 'Network Error') {
-      openSnackbar('Network Error', 'error');
-    } else if (localStorage.getItem('token') === null) {
-      openSnackbar('token expired', 'error');
-      const { history } = this.props;
+    const { data: { refetch } } = this.props;
+    const { history } = this.props;
+    try {
+      const response = await refetch();
+      if (response) {
+        history.push(`/trainee/${data.originalId}`);
+      }
+    } catch (error) {
       history.push('/login');
-    } else {
-      const { history } = this.props;
-      history.push(`/trainee/${data.originalId}`);
+      openSnackbar('Token Expired', 'error');
     }
   }
 
@@ -292,8 +269,6 @@ class TraineeList extends Component {
     const { data: { refetch } } = this.props;
     const limit = 5;
     const skip = page * limit;
-    console.log('handlePageChange', page);
-    console.log('reeee', refetch);
     this.setState({ page }, () => refetch({ skip, limit }));
   }
 
@@ -303,10 +278,6 @@ class TraineeList extends Component {
   }
 
   render() {
-    // console.log('propsss', this.props);
-    // const { data } = this.props;
-    const { data: { loading } } = this.props;
-    // console.log(data);
     const {
       open,
       deleteDialog,
@@ -318,10 +289,11 @@ class TraineeList extends Component {
       spinner,
     } = this.state;
     const limit = 5;
-    if (loading) {
-      return <CircularProgress size={24} />;
-    }
-    const { data: { getAllTrainee: { data: { totalRecords, records } } } } = this.props;
+    const {
+      data: {
+        loading, getAllTrainee: { data: { totalRecords = 0, records = [] } = {} } = {},
+      },
+    } = this.props;
     return (
       <SnackbarContext.Consumer>
         {(openSnackbar) => (
@@ -376,7 +348,7 @@ class TraineeList extends Component {
               onPageChange={this.handlePageChange}
               rowsPerPage={limit}
               loading={loading}
-              dataLength={totalRecords}
+              dataLength={totalRecords || 0}
             />
             <>
               { edit && (
@@ -407,7 +379,15 @@ class TraineeList extends Component {
 TraineeList.propTypes = {
   history: PropTypes.instanceOf(Object).isRequired,
   data: PropTypes.instanceOf(Object).isRequired,
-  // getAllTrainee: PropTypes.instanceOf(Object).isRequired,
+  create: PropTypes.func,
+  update: PropTypes.func,
+  deleteUser: PropTypes.func,
+};
+
+TraineeList.defaultProps = {
+  create: () => {},
+  update: () => {},
+  deleteUser: () => {},
 };
 
 export default graphql(GET_USER, {

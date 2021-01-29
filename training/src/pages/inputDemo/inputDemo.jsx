@@ -66,7 +66,6 @@ class InputDemo extends Component {
       role: `${football}` || `${cricket}`,
     };
     try {
-      // console.log(!this.schema.validateSync(this.state), '??????????????? Hserror');
       return !this.schema.validateSync(data);
     } catch (err) {
       return true;
@@ -76,12 +75,10 @@ class InputDemo extends Component {
   onToched = (componant) => {
     const { touched } = this.state;
     this.setState({ touched: { ...touched, [componant]: true } });
-    // console.log(this.state, '------------------ONTOUCHED');
   }
 
   isTouched = () => {
     const { touched } = this.state;
-    // console.log(Object.keys(touched), '=============length');
     return Object.keys(touched).length !== 0;
   }
 

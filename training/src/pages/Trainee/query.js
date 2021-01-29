@@ -1,8 +1,4 @@
 import { gql } from '@apollo/client';
-// import { Mutation } from '@apollo/react-hooks';
-// import { useMutation } from '@apollo/client';
-
-// console.log('inside mutauon------------');
 
 const GET_USER = gql`
   query GetAllTrainee($skip: Int, $limit: Int) {
@@ -19,6 +15,7 @@ const GET_USER = gql`
         role
         password
         createdAt
+        originalId
       }
     }
     }

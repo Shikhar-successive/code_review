@@ -92,20 +92,13 @@ class Login extends Component {
 
   onLogin = async (openSnackbar) => {
     const { email, password } = this.state;
-    // const userInfo = { email, password };
     const { loginUser } = this.props;
-    console.log(loginUser, '====');
     this.setState({
       spinner: true,
       btnDisable: true,
     });
-    // const user = await callApi(userInfo, 'post', '/user/login');
-    // console.log(loginUser({ payload: { email, password } }));
-    // const user = await useMutation(LOGIN_USER);
-    // const user = getLogin();
     try {
       const user = await loginUser({ variables: { email, password } });
-      console.log(user);
       if (user.data.loginUser === 'Invalid Email'
        || user.data.loginUser === 'Invalid Password'
        || user.data.loginUser === 'Something went wrong') {
@@ -124,7 +117,6 @@ class Login extends Component {
       }
     } catch (error) {
       if (error.message.includes('Network error')) {
-        console.log(error);
         this.setState({
           spinner: false,
           btnDisable: false,
@@ -132,40 +124,6 @@ class Login extends Component {
         openSnackbar(error.message, 'error');
       }
     }
-    // this.setState({
-    //   spinner: false,
-    // });
-    // localStorage.setItem('token', user.data.loginUser);
-    // const { history } = this.props;
-    // history.push('/Trainee');
-    // const user = await loginUser({ variables: { email, password } });
-    // console.log(user.error, '-----------');
-    // if (user === undefined) {
-    //   this.setState({
-    //     spinner: false,
-    //     btnDisable: false,
-    //   });
-    //   openSnackbar('Something went wrong', 'error');
-    // } else if (user === 'Network Error') {
-    //   this.setState({
-    //     spinner: false,
-    //     btnDisable: false,
-    //   });
-    //   openSnackbar(user, 'error');
-    // } else if (user.Data) {
-    //   this.setState({
-    //     spinner: false,
-    //   });
-    //   localStorage.setItem('token', user.Data);
-    //   const { history } = this.props;
-    //   history.push('/Trainee');
-    // } else {
-    //   this.setState({
-    //     btnDisable: false,
-    //     spinner: false,
-    //   });
-    //   openSnackbar(user.response.data.message, 'error');
-    // }
   }
 
   render() {

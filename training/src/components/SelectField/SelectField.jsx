@@ -7,7 +7,6 @@ class SelectField extends Component {
     const {
       value, onChange, options, defaultText, onBlur, error,
     } = this.props;
-    // console.log(options[1].label);
     return (
       <>
         <select style={style.text} name="sport" id="sport" onChange={onChange} value={value} onBlur={onBlur}>
