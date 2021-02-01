@@ -11,7 +11,7 @@ import { SnackbarContext } from '../../contexts/SnackBarProvider/SnackBarProvide
 import { callApi } from '../../libs/utils';
 import { withLoaderAndMessage } from '../../components/hoc';
 import { GET_USER } from './query';
-import { TRAINEE_UPDATED } from './subscription';
+import { TRAINEE_UPDATED, TRAINEE_DELETED } from './subscription';
 
 const asend = 'asc';
 const dsend = 'desc';
@@ -34,17 +34,19 @@ class TraineeList extends Component {
 
   async componentDidMount() {
     const { data: { subscribeToMore } } = this.props;
-    await subscribeToMore({
+    subscribeToMore({
       document: TRAINEE_UPDATED,
       updateQuery: (prev, { subscriptionData }) => {
-        if (!subscriptionData) return prev;
-        const { data: { getAllTrainee: { data: { records } } } } = prev;
+        if (!subscriptionData) {
+          return prev;
+        }
+        const { getAllTrainee: { data: { records } } } = prev;
         const { data: { traineeUpdated } } = subscriptionData;
         const updatedRecords = [...records].map((record) => {
-          if (record.originalId === traineeUpdated.originalId) {
+          if (record.originalId === traineeUpdated.data.originalId) {
             return {
               ...record,
-              ...traineeUpdated,
+              ...traineeUpdated.data,
             };
           }
           return record;
@@ -52,8 +54,31 @@ class TraineeList extends Component {
         return {
           getAllTrainee: {
             ...prev.getAllTrainee,
-            count: prev.getAllTrainee.count,
-            records: updatedRecords,
+            data: {
+              ...prev.getAllTrainee.data,
+              records: updatedRecords,
+            },
+          },
+        };
+      },
+    });
+    subscribeToMore({
+      document: TRAINEE_DELETED,
+      updateQuery: (prev, { subscriptionData }) => {
+        if (!subscriptionData) {
+          return prev;
+        }
+        const { getAllTrainee: { data: { records } } } = prev;
+        const { data: { traineeDeleted: { data } } } = subscriptionData;
+        const newRecord = [...records].filter((record) => !(record.originalId === data.id));
+        return {
+          getAllTrainee: {
+            ...prev.getAllTrainee,
+            data: {
+              ...prev.getAllTrainee.data,
+              count: prev.getAllTrainee.data.count - 1,
+              records: newRecord,
+            },
           },
         };
       },
