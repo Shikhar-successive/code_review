@@ -94,56 +94,55 @@ class TraineeList extends Component {
   };
 
   handleSubmit = async (openSnackbar, state) => {
-    const userInfo = {
-      name: state.name,
-      email: state.email,
-      password: state.password,
-      role: 'trainee',
-      createdBy: 'Admin',
-    };
     const {
-      name, email, password, role, createdBy,
-    } = userInfo;
+      name,
+      email,
+      password,
+    } = state;
     this.setState({ spinner: true });
     try {
       const { create } = this.props;
       const user = await create({
         variables: {
-          name, email, password, role, createdBy,
+          name, email, password, role: 'trainee', createdBy: 'Admin',
         },
       });
       if (user.data.create.data.email === email) {
-        openSnackbar(user.data.create.message, 'success');
         const { data: { refetch } } = this.props;
         this.setState({
           spinner: false,
           page: 0,
         }, () => refetch({ skip: 0, limit: 5 }));
-        this.onCloseEvent();
-      } else if (user.data.create.message === 'User is Unauthorized') {
+        openSnackbar(user.data.create.message, 'success');
+        return this.onCloseEvent();
+      }
+      if (user.data.create.message === 'User is Unauthorized') {
         this.setState({
           spinner: false,
         });
-        this.onCloseEvent();
         openSnackbar(user.data.create.message, 'error');
-      } else if (user.data.create.message === 'Token Expired') {
+        return this.onCloseEvent();
+      }
+      if (user.data.create.message === 'Token Expired') {
+        localStorage.removeItem('token');
         this.setState({
           spinner: false,
         });
         this.onCloseEvent();
         const { history } = this.props;
-        history.push('/login');
         openSnackbar(user.data.create.message, 'error');
+        return history.push('/login');
       }
     } catch (error) {
       if (error.message.includes('Network error')) {
         this.setState({
           spinner: false,
         });
-        this.onCloseEvent();
         openSnackbar(error.message, 'error');
+        return this.onCloseEvent();
       }
     }
+    return null;
   }
 
   editDialogOpen = (item) => {
@@ -157,16 +156,7 @@ class TraineeList extends Component {
   };
 
   handleEdit = async (openSnackbar, state) => {
-    const userInfo = {
-      originalId: state.traineeId,
-      name: state.name,
-      email: state.email,
-      role: 'trainee',
-      updatedBy: 'Admin',
-    };
-    const {
-      originalId, name, email, role, updatedBy,
-    } = userInfo;
+    const { originalId, name, email } = state;
     this.setState({
       spinner: true,
     });
@@ -174,40 +164,42 @@ class TraineeList extends Component {
       const { update } = this.props;
       const updateUser = await update({
         variables: {
-          originalId, name, email, role, updatedBy,
+          originalId, name, email, role: 'trainee', updatedBy: 'Admin',
         },
       });
       if (updateUser.data.update.data.email === email) {
-        openSnackbar(updateUser.data.update.message, 'success');
         const { data: { refetch } } = this.props;
         this.setState({
           spinner: false,
         }, () => refetch());
-        this.editDialogClose();
-      } else if (updateUser.data.update.message === 'User is Unauthorized') {
+        openSnackbar(updateUser.data.update.message, 'success');
+        return this.editDialogClose();
+      } if (updateUser.data.update.message === 'User is Unauthorized') {
         this.setState({
           spinner: false,
         });
-        this.editDialogClose();
         openSnackbar(updateUser.data.update.message, 'error');
-      } else if (updateUser.data.update.message === 'Token Expired') {
+        return this.editDialogClose();
+      } if (updateUser.data.update.message === 'Token Expired') {
+        localStorage.removeItem('token');
         this.setState({
           spinner: false,
         });
         this.onCloseEvent();
         const { history } = this.props;
-        history.push('/login');
         openSnackbar(updateUser.data.update.message, 'error');
+        return history.push('/login');
       }
     } catch (error) {
       if (error.message.includes('Network error')) {
         this.setState({
           spinner: false,
         });
-        this.editDialogClose();
         openSnackbar(error.message, 'error');
+        return this.editDialogClose();
       }
     }
+    return null;
   }
 
   deleteDialogOpen = (item) => {
@@ -231,64 +223,69 @@ class TraineeList extends Component {
     if (traineeInfo.createdAt >= '2019-02-14') {
       const { deleteUser } = this.props;
       try {
-        const deleteRec = await deleteUser({
-          variables: {
-            originalId,
-          },
-        });
+        const deleteRec = await deleteUser({ variables: { originalId } });
         if (deleteRec.data.deleteUser.data.id === originalId) {
           openSnackbar(deleteRec.data.deleteUser.message, 'success');
           if (page > 0) {
-            if (((totalRecords - 1) % 5) > 0) {
+            if (((totalRecords - 1) % 5) > 0) { // if record is NOT last on the page
               this.setState({
                 spinner: false,
               }, () => refetch());
-              this.deleteDialogClose();
-            } else if (((totalRecords - 1) % 5) === 0) {
-              if (!((totalRecords - 1) / 5 === page)) {
+              return this.deleteDialogClose();
+            }
+            if (((totalRecords - 1) % 5) === 0) { // if record is last on the page
+              if (!((totalRecords - 1) / 5 === page)) { // if record is deleted from one page back
                 this.setState({
                   spinner: false,
                 }, () => refetch());
-                this.deleteDialogClose();
-              } else if ((totalRecords - 1) / 5 === page) {
+                return this.deleteDialogClose();
+              }
+              if ((totalRecords - 1) / 5 === page) {
                 this.setState({
                   spinner: false,
                   page: page -= 1,
                 }, () => refetch({ skip: page * 5, limit: 5 }));
-                this.deleteDialogClose();
+                return this.deleteDialogClose();
               }
             }
-          } else if (page === 0) {
+            return null;
+          }
+          if (page === 0) {
             this.setState({
               spinner: false,
             }, () => refetch());
-            this.deleteDialogClose();
+            return this.deleteDialogClose();
           }
-        } else if (deleteRec.data.deleteUser.message === 'User is Unauthorized') {
+          return null;
+        }
+        if (deleteRec.data.deleteUser.message === 'User is Unauthorized') {
           this.setState({
             spinner: false,
           }, () => refetch());
-          this.deleteDialogClose();
           openSnackbar(deleteRec.data.deleteUser.message, 'error');
-        } else if (deleteRec.data.deleteUser.message === 'Token Expired') {
+          return this.deleteDialogClose();
+        }
+        if (deleteRec.data.deleteUser.message === 'Token Expired') {
+          localStorage.removeItem('token');
           this.setState({
             spinner: false,
           });
           this.onCloseEvent();
           const { history } = this.props;
-          history.push('/login');
           openSnackbar(deleteRec.data.deleteUser.message, 'error');
+          return history.push('/login');
         }
       } catch (error) {
         if (error.message.includes('Network error')) {
           this.setState({
             spinner: false,
           });
-          this.deleteDialogClose();
           openSnackbar(error.message, 'error');
+          return this.deleteDialogClose();
         }
       }
     }
+    return null;
   }
 
   handleSort = (field) => {
@@ -310,16 +307,26 @@ class TraineeList extends Component {
         history.push(`/trainee/${data.originalId}`);
       }
     } catch (error) {
+      localStorage.removeItem('token');
       history.push('/login');
       openSnackbar('Token Expired', 'error');
     }
   }
 
-  handlePageChange = (event, page) => {
+  handlePageChange = async (event, page, openSnackbar) => {
     const { data: { refetch } } = this.props;
     const limit = 5;
     const skip = page * limit;
-    this.setState({ page }, () => refetch({ skip, limit }));
+    const response = await refetch({ skip, limit });
+    if (response.data.getAllTrainee.data.records) {
+      return this.setState({ page }, () => refetch({ skip, limit }));
+    } if (response.data.getAllTrainee.message === 'Token Expired') {
+      localStorage.removeItem('token');
+      const { history } = this.props;
+      history.push('/login');
+      return openSnackbar(response.data.getAllTrainee.message, 'error');
+    }
+    return null;
   }
 
   getTrainees = async () => {
@@ -395,7 +402,9 @@ class TraineeList extends Component {
               onSelect={(detail) => this.handleSelect(openSnackbar, detail)}
               count={totalRecords}
               page={page}
-              onPageChange={this.handlePageChange}
+              onPageChange={(event, tablePage) => this.handlePageChange(
+                event, tablePage, openSnackbar,
+              )}
               rowsPerPage={limit}
               loading={loading}
               dataLength={totalRecords || 0}

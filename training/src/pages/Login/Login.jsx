@@ -106,14 +106,15 @@ class Login extends Component {
           spinner: false,
           btnDisable: false,
         });
-        openSnackbar(user.data.loginUser, 'error');
-      } else if (!(user.data.loginUser === 'Invalid Email' || user.data.loginUser === 'Invalid Password')) {
+        return openSnackbar(user.data.loginUser, 'error');
+      } if (!(user.data.loginUser === 'Invalid Email' || user.data.loginUser === 'Invalid Password')) {
         this.setState({
           spinner: false,
         });
         localStorage.setItem('token', user.data.loginUser);
         const { history } = this.props;
         history.push('/Trainee');
+        return openSnackbar('Login Successfull', 'success');
       }
     } catch (error) {
       if (error.message.includes('Network error')) {
@@ -121,9 +122,10 @@ class Login extends Component {
           spinner: false,
           btnDisable: false,
         });
-        openSnackbar(error.message, 'error');
+        return openSnackbar(error.message, 'error');
       }
     }
+    return null;
   }
 
   render() {

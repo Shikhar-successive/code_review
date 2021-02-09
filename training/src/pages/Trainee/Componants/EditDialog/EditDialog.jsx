@@ -93,8 +93,7 @@ class EditDialog extends Component {
       onSubmit,
       loading,
     } = this.props;
-    const traineeId = details.originalId;
-    const state = { name, email, traineeId };
+    const state = { name, email, originalId: details.originalId };
     return (
       <Dialog open={open} onClose={onClose} aria-labelledby="form-dialog-title" fullWidth maxWidth="md">
         <DialogTitle style={{ alignContent: 'start' }}>Edit Trainee</DialogTitle>
