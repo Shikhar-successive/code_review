@@ -304,27 +304,30 @@ class TraineeList extends Component {
     try {
       const response = await refetch();
       if (response) {
-        history.push(`/trainee/${data.originalId}`);
+        return history.push(`/trainee/${data.originalId}`);
       }
     } catch (error) {
       localStorage.removeItem('token');
       history.push('/login');
-      openSnackbar('Token Expired', 'error');
+      return openSnackbar('Token Expired', 'error');
     }
+    return null;
   }
 
   handlePageChange = async (event, page, openSnackbar) => {
     const { data: { refetch } } = this.props;
     const limit = 5;
     const skip = page * limit;
-    const response = await refetch({ skip, limit });
-    if (response.data.getAllTrainee.data.records) {
-      return this.setState({ page }, () => refetch({ skip, limit }));
-    } if (response.data.getAllTrainee.message === 'Token Expired') {
+    try {
+      const response = await refetch({ skip, limit });
+      if (response.data.getAllTrainee.data.records) {
+        return this.setState({ page }, () => refetch({ skip, limit }));
+      }
+    } catch (error) {
       localStorage.removeItem('token');
       const { history } = this.props;
       history.push('/login');
-      return openSnackbar(response.data.getAllTrainee.message, 'error');
+      return openSnackbar('Token expired', 'error');
     }
     return null;
   }
